@@ -699,7 +699,7 @@ public class DefineTable {
 	 * 
 	 */
 
-	public void populateDefineEquates(DataTypeManager openDTMgrs[], DataTypeManager dtMgr) {
+	public void populateDefineEquates(DataTypeManager openDTMgrs[], DataTypeManager dtMgr, String[] includePaths) {
 		int transactionID = dtMgr.startTransaction("Add Equates");
 
 		Iterator<String> iter = getDefineNames();
@@ -732,13 +732,14 @@ public class DefineTable {
 
 			value = lvalue.longValue();
 
-			populateDefineEquate(openDTMgrs, dtMgr, "defines", "define_", defName, value);
+			populateDefineEquate(openDTMgrs, dtMgr, "defines", "define_", defName, value, includePaths);
 		}
 
 		dtMgr.endTransaction(transactionID, true);
 	}
 
-	public void populateDefineEquate(DataTypeManager openDTMgrs[], DataTypeManager dtMgr, String category, String prefix, String defName, long value) {
+	public void populateDefineEquate(DataTypeManager openDTMgrs[], DataTypeManager dtMgr, String category,
+			String prefix, String defName, long value, String[] includePaths) {
 		String enumName = prefix + defName;
 
 		// Start the Enum at 8, then resize to fit the value
@@ -747,7 +748,8 @@ public class DefineTable {
 		enuum.setLength(enuum.getMinimumPossibleLength());
 
 		String defPath = getDefinitionPath(defName);
-		String currentCategoryName = getFileName(defPath);
+		enuum.setDescription(defPath);
+		String currentCategoryName = getFileName(defPath, includePaths);
 		CategoryPath path = getCategory(currentCategoryName);
 		path = new CategoryPath(path, category);
 		enuum.setCategoryPath(path);
@@ -851,10 +853,19 @@ public class DefineTable {
 	/*
 	 * Get the filename portion of a path
 	 */
-	private static String getFileName(String path) {
+	private static String getFileName(String path, String[] includePaths) {
 		if (path == null) {
 			return null;
 		}
+
+		for (String includePath : includePaths)
+		{
+			if (path.startsWith(includePath))
+			{
+				return path.substring(includePath.length() + 1);
+			}
+		}
+
 		int slashpos = path.lastIndexOf('/');
 		if (slashpos < 0) {
 			slashpos = path.lastIndexOf('\\');
