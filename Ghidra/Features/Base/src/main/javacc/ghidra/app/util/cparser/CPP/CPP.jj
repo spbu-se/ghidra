@@ -115,7 +115,9 @@ import ghidra.util.task.TaskMonitor;
 import java.util.*;
 import java.io.*;
 import java.math.BigInteger;
-import ghidra.program.util.AddressEvaluator; 
+import ghidra.program.util.AddressEvaluator;
+
+import org.apache.commons.text.StringEscapeUtils;
 
 @SuppressWarnings("all") // ignore warnings from generated code
 public class PreProcessor {
@@ -314,18 +316,28 @@ public class PreProcessor {
 					case PreProcessor.INTEGER_LITERAL:
 						thisFP = new Double(getLongValue(this.image).doubleValue());
 						break;
+					case PreProcessor.CHARACTER_LITERAL:
+						thisFP = (double) getCharacterCode(this.image);
+						break;
 					default:
-						PPToken replVal = (PPToken) getDef(this); // not a PPToken
-						if (replVal == null) {
-							replVal = new PPToken(this);
-							// addParseMessage(null,
-							// "Missing numeric value for: "+image+" at "
-							// +curFileStackTop
-							// ()+"'"+beginLine+". PreProcessor expects one.");
+						PPToken replToken = defs.get(this.image);
+						if (replToken != null && (replToken.image.startsWith("\'") || replToken.image.startsWith("L\'")) &&
+								replToken.image.endsWith("\'")) {
+							thisFP = (double) getCharacterCode(replToken.image);
 						}
-						thisVal = replVal.image;
-						fixupNumericValue(replVal);
-						thisFP = getDoubleValue(replVal.image);
+						else {
+							replToken = (PPToken) getDef(this); // not a PPToken
+							if (replToken == null) {
+								replToken = this;
+								// addParseMessage(null,
+								// "Missing numeric value for: "+image+" at "
+								// +curFileStackTop
+								// ()+"'"+beginLine+". PreProcessor expects one.");
+							}
+							thisVal = replToken.image;
+							fixupNumericValue(replToken);
+							thisFP = getDoubleValue(replToken.image);
+						}
 				}
 			}
 			catch (NumberFormatException e) {
@@ -347,18 +359,28 @@ public class PreProcessor {
 					case PreProcessor.INTEGER_LITERAL:
 						thatFP = new Double(getLongValue(that.image).doubleValue());
 						break;
+					case PreProcessor.CHARACTER_LITERAL:
+						thatFP = (double) getCharacterCode(that.image);
+						break;
 					default:
-						PPToken replVal = (PPToken) getDef(that); // not a PPToken
-						if (replVal == null) {
-							replVal = new PPToken(that);
-							// addParseMessage(null,
-							// "Missing numeric value for: "+image+" at "
-							// +curFileStackTop
-							// ()+"'"+beginLine+". PreProcessor expects one.");
+						PPToken replToken = defs.get(that.image);
+						if (replToken != null && (replToken.image.startsWith("\'") || replToken.image.startsWith("L\'")) &&
+								replToken.image.endsWith("\'")) {
+							thatFP = (double) getCharacterCode(replToken.image);
 						}
-						thatVal = replVal.image;
-						fixupNumericValue(replVal);
-						thatFP = getDoubleValue(replVal.image);
+						else {
+							replToken = (PPToken) getDef(that); // not a PPToken
+							if (replToken == null) {
+								replToken = that;
+								// addParseMessage(null,
+								// "Missing numeric value for: "+image+" at "
+								// +curFileStackTop
+								// ()+"'"+beginLine+". PreProcessor expects one.");
+							}
+							thisVal = replToken.image;
+							fixupNumericValue(replToken);
+							thisFP = getDoubleValue(replToken.image);
+						}
 				}
 			}
 			catch (NumberFormatException e) {
@@ -370,6 +392,7 @@ public class PreProcessor {
 				// curFileStackTop() + " line " + that.beginLine +
 				// " : "+e.getMessage());
 			}
+
 			if (this.image.equals(that.image)) {
 				return 0;
 			}
@@ -385,15 +408,16 @@ public class PreProcessor {
 			if (thisFP != null && thatFP != null) {
 				comparison = thisFP.compareTo(thatFP);
 			}
+			else if (thisVal != null && thatVal != null) {
+				comparison = thisVal.compareTo(thatVal);
+			}
 			else if (thisFP != null && thatFP == null) {
 				comparison = 1;
 			}
 			else if (thisFP == null && thatFP != null) {
 				comparison = -1;
 			}
-			else if (thisVal != null && thatVal != null) {
-				comparison = thisVal.compareTo(thatVal);
-			}
+
 			return comparison;
 		}
 
@@ -1221,8 +1245,29 @@ public class PreProcessor {
 		return value;
 	}
 
+	private Integer getCharacterCode(String stringValue)
+	{
+		if (stringValue.startsWith("L")) {
+			String value = StringEscapeUtils.unescapeJava(stringValue.substring(2, stringValue.length() - 1));
+			return (int) value.charAt(0);
+		}
+
+		String value = StringEscapeUtils.unescapeJava(stringValue.substring(1, stringValue.length() - 1));
+		int result = 0;
+		for (int i = Math.max(0, value.length() - 4); i < value.length(); i++) {
+			result <<= 8;
+			result += (int) value.charAt(i);
+		}
+
+		return result;
+	}
+
 	private BigInteger getLongValue(String str) throws NumberFormatException {
 		try {
+			if ((str.startsWith("L\'") || str.startsWith("\'")) && str.endsWith("\'")) {
+				return new BigInteger(String.valueOf(getCharacterCode(str)));
+			}
+
 			if (str.endsWith("L") || str.endsWith("l") || str.endsWith("U")) {
 				str = str.substring(0, str.length() - 1);
 			}
@@ -2212,7 +2257,7 @@ PPToken Assertion() :
         pt=Expression()
     {
        pt = new PPToken(pt);
-       pt.setTruth(isDef(pt) || (pt.kind == FP_NUMERIC || pt.kind == NUMERIC));  // numbers are always defined
+       pt.setTruth(isDef(pt) || (pt.kind == FP_NUMERIC || pt.kind == NUMERIC || pt.kind == CHARACTER_LITERAL));  // numbers are always defined
        return pt;
     })
     | 
@@ -2342,14 +2387,21 @@ PPToken ValueExpression() :
 
     (
     LOOKAHEAD(2)
-    (t=<NUMERIC> | t=<FP_NUMERIC> | t=<ELSE> | t=<IF> ) {
+    (t=<NUMERIC>| t=<FP_NUMERIC> | t=<ELSE> | t=<IF>) {
         if (verboseLevel()==7) print(t.image);
         pt=new PPToken(t);
         if (pt.compareToZero()==0) pt.setTruth(false);
         else pt.setTruth(true);
         return pt;
     }
-    |
+  	|
+    (t=<CHARACTER_LITERAL>) {
+        if (verboseLevel()==7) print(t.image);
+        pt=new PPToken(t);
+        pt.setTruth(true);
+        return pt;
+    }
+	|
     <BEGITEM> pt=CompoundConditionalExpression() <ENDITEM> {
     	return pt;
     }
@@ -2609,6 +2661,23 @@ TOKEN : {
 //    <INT_CAST: "-0" | "- 0" | "- 0L" | "+ 0" > |
     <NUMERIC:  (<INTEGER_LITERAL>)+ > |
     <FP_NUMERIC: (<FP_LITERAL>)+ > |
+    <CHARACTER_LITERAL :
+        ("L")?
+        "\'"
+        (
+            ~[ "\'", "\\", "\n", "\r" ]
+            |
+            "\\"
+            (
+                [ "n", "t", "b", "r", "f", "\\", "\'", "\"" ]
+                |
+                [ "0"-"7" ] ( [ "0"-"7" ] )?
+                |
+                [ "0"-"3" ] [ "0"-"7" ] [ "0"-"7" ]
+            )
+        )+
+        "\'"
+    > |
     <ITEM:  (["a"-"z","A"-"Z","_","$"] (["a"-"z","A"-"Z","_","$","0"-"9"])* | (["0"-"9"])+ | ["1"-"9"](["0"-"9"])* | ["0"](["0"-"9"])+ )> |
     <BEGITEM: <OP>> { parenNesting++; } : DIRECTIVE |
     <ENDITEM: <CP>> { parenNesting--; } : DIRECTIVE |
