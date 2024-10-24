@@ -174,13 +174,13 @@ public class PreProcessor {
         ArrayList <Boolean> expandList = new ArrayList();
                 
         void append(String str, boolean expand) {
-           if (image != null & image.length()>0) {
+           if (image != null && image.length() > 0) {
                appendList.add(new StringBuffer(image));
                expandList.add(true);
                image = null;
            }
            int endIndex = appendList.size() - 1;
-           if (endIndex >= 0 && (str.strip().length()==0 || expand == expandList.get(endIndex)) ) {
+           if (endIndex >= 0 && (str.strip().length() == 0 || expand == expandList.get(endIndex)) ) {
         	   // just add to the last image so it can expand properly
         	   StringBuffer lastStr = appendList.get(endIndex);
         	   lastStr.append(str);
@@ -855,9 +855,12 @@ public class PreProcessor {
 	
 	void bufAppendWithComment(PPToken buf, Token u) {
 	    if (emitExecSwitch==true)
+	    {
 	        buf.append(u.image,true);
-	    else
+	  	}
+	    else {
 	        buf.append("//// " + u.image, false);
+	  	}
 	}
 
 	// Parse include file
