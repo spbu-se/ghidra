@@ -278,18 +278,16 @@ public class DefineTable {
 	 */
 	private String macroSub(String image, int pos, ArrayList<String> initialList) {
 		int replaceCount = 0;
-
 		StringBuffer buf = new StringBuffer(image);
 		int lastReplPos = pos;
-		
+
 		boolean initialListSupplied = initialList != null;  // initial list passed in
 		ArrayList<String> sublist = new ArrayList<String>();
 		if (initialList != null) {
 			sublist.addAll(initialList);
 		}
 
-
-		// don't replace an infinite number of times.  Fail safe for possible ininite loop
+		// don't replace an infinite number of times.  Fail safe for possible infinite loop
 		while (pos < buf.length() && replaceCount < ARBITRARY_MAX_REPLACEMENTS) {
 			// clear list of used macros when move past replacement area
 			if (pos == lastReplPos) {
@@ -298,11 +296,11 @@ public class DefineTable {
 					sublist.addAll(initialList); // add back in initialList of nonreplacement names
 				}
 			}
+
 			String defName = getDefineAt(buf, pos);
 			if (shouldReplace(buf, defName, pos)) {
 				// stop recursion on the same replacement string
 				int replPos = replace(buf, defName, pos, sublist, initialListSupplied);
-
 				if (replPos == -1) {
 					// if no replacement string, move on
 					pos++;
@@ -317,9 +315,11 @@ public class DefineTable {
 				pos++;
 			}
 		}
+
 		if (replaceCount >= ARBITRARY_MAX_REPLACEMENTS) {
 			System.err.println(" replace " + image + " hit limit");
 		}
+
 		return buf.toString();
 	}
 
@@ -338,6 +338,7 @@ public class DefineTable {
 			Character.isJavaIdentifierPart(buf.charAt(currIndex - 1)))) {
 			return false;
 		}
+
 		int afterIndex = currIndex + defName.length();
 		if (afterIndex < buf.length() && (Character.isJavaIdentifierStart(buf.charAt(afterIndex)) ||
 			Character.isJavaIdentifierPart(buf.charAt(afterIndex)))) {
@@ -397,7 +398,6 @@ public class DefineTable {
 			// there shouldn't be so many globals...
 			// could be screwed up by so many things
 			String parms = getParams(buf, currIndex + currKey.length(), (char) 0);
-
 			int parmslen = parms.length();
 			if (parmslen < 2) {
 				return -1;
@@ -508,7 +508,7 @@ public class DefineTable {
 
 				beginPos.add(insertLoc, begin);
 				endPos.add(insertLoc, Integer.valueOf(curpos + curArgName.length()));
-				subValue.add(insertLoc, argValue);
+				subValue.add(insertLoc, macroSub(argValue, 0, null));
 			}
 			while (curpos >= 0);
 		}
