@@ -315,7 +315,6 @@ public class DefineTable {
 				pos++;
 			}
 		}
-
 		if (replaceCount >= ARBITRARY_MAX_REPLACEMENTS) {
 			System.err.println(" replace " + image + " hit limit");
 		}
@@ -508,7 +507,14 @@ public class DefineTable {
 
 				beginPos.add(insertLoc, begin);
 				endPos.add(insertLoc, Integer.valueOf(curpos + curArgName.length()));
-				subValue.add(insertLoc, macroSub(argValue, 0, null));
+				if (argValue.startsWith("#"))
+				{
+					subValue.add(insertLoc, "\"" + argValue.substring(1) + "\"");
+				}
+				else
+				{
+					subValue.add(insertLoc, macroSub(argValue, 0, null));
+				}
 			}
 			while (curpos >= 0);
 		}
@@ -535,6 +541,10 @@ public class DefineTable {
 		}
 		
 		substString = buf.toString();
+		if (substString.charAt(0) == '#')
+		{
+			substString = "\"" + substString.substring(1) +"\"";
+		}
 		return substString;
 	}
 
@@ -645,9 +655,6 @@ public class DefineTable {
 		// get rid of ## constructs
 		if (join) {
 			image = joinPdPd(image);
-		}
-		if (image.length() > 0 && image.charAt(0) == '#') {
-			image = "\"" + image.substring(1) + "\"";
 		}
 
 		return image;
