@@ -507,7 +507,7 @@ public class DefineTable {
 
 				beginPos.add(insertLoc, begin);
 				endPos.add(insertLoc, Integer.valueOf(curpos + curArgName.length()));
-				if (argValue.startsWith("#"))
+				if (argValue.length() > 0 && argValue.startsWith("#"))
 				{
 					subValue.add(insertLoc, "\"" + argValue.substring(1) + "\"");
 				}
@@ -541,7 +541,7 @@ public class DefineTable {
 		}
 		
 		substString = buf.toString();
-		if (substString.charAt(0) == '#')
+		if (substString.length() > 0 && substString.charAt(0) == '#')
 		{
 			substString = "\"" + substString.substring(1) +"\"";
 		}
