@@ -173,7 +173,7 @@ public class CParser {
             return rootCat;
         }
         
-        CategoryPath cat= new CategoryPath(rootCat, catName);
+        CategoryPath cat = new CategoryPath(rootCat, catName.split("/"));
         return cat;
     }
 
