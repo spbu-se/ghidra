@@ -17,6 +17,7 @@
 package ghidra.app.util.cparser.CPP;
 
 import java.util.*;
+import java.io.*;
 
 import ghidra.app.util.cparser.CPP.PreProcessor.PPToken;
 import ghidra.program.model.data.*;
@@ -753,7 +754,6 @@ public class DefineTable {
 		EnumDataType enuum = new EnumDataType(enumName, 8);
 		enuum.add(defName, value);
 		enuum.setLength(enuum.getMinimumPossibleLength());
-
 		String defPath = getDefinitionPath(defName);
 		enuum.setDescription(defPath);
 		String currentCategoryName = getFileName(defPath, includePaths);
@@ -854,7 +854,8 @@ public class DefineTable {
 		if (catName == null || catName.length() == 0) {
 			return rootCat;
 		}
-		return new CategoryPath(rootCat, catName);
+		
+		return new CategoryPath(rootCat, catName.split("/"));
 	}
 
 	/*
