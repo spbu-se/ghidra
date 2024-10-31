@@ -536,7 +536,6 @@ public class CParserUtils {
 			os.flush();
 			os.close();
 			System.setOut(old);
-
 		}
 
 		cppMessages = cpp.getParseMessages();
