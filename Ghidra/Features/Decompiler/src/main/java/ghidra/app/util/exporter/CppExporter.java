@@ -352,10 +352,10 @@ public class CppExporter extends Exporter {
 		String resultString = new String();
 		SourceArchive sourceArchive = program.getDataTypeManager().getSourceArchives().getFirst();
 		for (DataType dataType :  program.getDataTypeManager().getDataTypes(sourceArchive)) {
+			String headerName = dataType.getPathName().substring(1, dataType.getPathName().indexOf(".h") + 2);
 			if (dataType.getPathName().contains(".h") &&
-					!headerList.contains(dataType.getPathName())) {
-				String headerName = dataType.getPathName().substring(1, dataType.getPathName().indexOf(".h") + 2);
-				headerList.add(dataType.getPathName());
+					!headerList.contains(headerName)) {
+				headerList.add(headerName);
 				resultString = resultString.concat("#include <" + headerName + ">\n");
 			}
 		}
