@@ -25,16 +25,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import generic.test.AbstractGenericTest;
-import ghidra.app.util.exporter.CppExporter;
-import ghidra.app.util.exporter.Exporter;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.lang.*;
 import ghidra.program.util.DefaultLanguageService;
-import ghidra.util.UniversalID;
 import ghidra.util.task.TaskMonitor;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.data.*;
-import ghidra.test.*;
 import ghidra.framework.Application;
 
 import generic.jar.ResourceFile;
