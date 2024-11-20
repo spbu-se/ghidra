@@ -305,13 +305,16 @@ public class CppExporter extends Exporter {
 	private String getAllHeaderFiles(Program program) throws IOException  {
 		HashSet<String> headerList = new HashSet<String>();
 		String resultString = new String();
-		SourceArchive sourceArchive = program.getDataTypeManager().getSourceArchives().getFirst();
-		for (DataType dataType :  program.getDataTypeManager().getDataTypes(sourceArchive)) {
-			String headerName = dataType.getPathName().substring(1, dataType.getPathName().indexOf(".h") + 2);
-			if (dataType.getPathName().contains(".h") &&
-					!headerList.contains(headerName)) {
-				headerList.add(headerName);
-				resultString = resultString.concat("#include <" + headerName + ">\n");
+//		SourceArchive sourceArchive = program.getDataTypeManager().getSourceArchives().getFirst();
+		for (SourceArchive sourceArchive : program.getDataTypeManager().getSourceArchives())
+		{
+			for (DataType dataType :  program.getDataTypeManager().getDataTypes(sourceArchive)) {
+				String headerName = dataType.getPathName().substring(1, dataType.getPathName().indexOf(".h") + 2);
+				if (dataType.getPathName().contains(".h") &&
+						!headerList.contains(headerName)) {
+					headerList.add(headerName);
+					resultString = resultString.concat("#include <" + headerName + ">\n");
+				}
 			}
 		}
 
