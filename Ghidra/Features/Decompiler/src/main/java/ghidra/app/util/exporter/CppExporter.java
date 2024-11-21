@@ -350,7 +350,6 @@ public class CppExporter extends Exporter {
 	private String getAllHeaderFiles(Program program) throws IOException  {
 		HashSet<String> headerList = new HashSet<String>();
 		String resultString = new String();
-//		SourceArchive sourceArchive = program.getDataTypeManager().getSourceArchives().getFirst();
 		for (SourceArchive sourceArchive : program.getDataTypeManager().getSourceArchives())
 		{
 			for (DataType dataType :  program.getDataTypeManager().getDataTypes(sourceArchive)) {
