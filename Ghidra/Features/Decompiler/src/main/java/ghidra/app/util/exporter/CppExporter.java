@@ -191,7 +191,7 @@ public class CppExporter extends Exporter {
 
 	private boolean excludeFunction(Function currentFunction) {
 
-		if (isCRTFunction(currentFunction)) {
+		if (excludeCRuntime && isCRTFunction(currentFunction)) {
 			return true;
 		}
 
