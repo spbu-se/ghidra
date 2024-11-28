@@ -159,7 +159,7 @@ public class DecompilerPanel extends JPanel implements FieldMouseListener, Field
 		setDecompileData(new EmptyDecompileData("No Function"));
 
 		if (options.isDisplayLineNumbers()) {
-			addMarginProvider(lineNumbersMargin = new LineNumberDecompilerMarginProvider());
+			addMarginProvider(lineNumbersMargin = new LineNumberDecompilerMarginProvider(this));
 		}
 	}
 
@@ -832,7 +832,23 @@ public class DecompilerPanel extends JPanel implements FieldMouseListener, Field
 		}
 	}
 
-	private void tryToGoto(FieldLocation location, Field field, InputEvent event,
+	public boolean containsOpeningBrace(int lineNumber) {
+		List<ClangLine> lines = layoutController.getLines();
+		if (lineNumber < 0 || lineNumber > lines.size()) {
+			Msg.showError(this, this, "Invalid Line Number",
+				"Line number " + lineNumber + " is out of range");
+			return false; // Line number out of range
+		}
+		ClangLine line = lines.get(lineNumber);
+		for (ClangToken token : line.getAllTokens()) {
+			if (token.getText().contains("{")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private void tryToGoto(FieldLocation location, Field field, MouseEvent event,
 			boolean newWindow) {
 		if (!navitationEnabled) {
 			return;
@@ -857,7 +873,7 @@ public class DecompilerPanel extends JPanel implements FieldMouseListener, Field
 		}
 	}
 
-	private void tryGoToComment(FieldLocation location, InputEvent event, ClangTextField textField,
+	private void tryGoToComment(FieldLocation location, MouseEvent event, ClangTextField textField,
 			boolean newWindow) {
 
 		// comments may use annotations; tell the annotation it was clicked
@@ -1265,7 +1281,7 @@ public class DecompilerPanel extends JPanel implements FieldMouseListener, Field
 
 		if (options.isDisplayLineNumbers()) {
 			if (lineNumbersMargin == null) {
-				addMarginProvider(lineNumbersMargin = new LineNumberDecompilerMarginProvider());
+				addMarginProvider(lineNumbersMargin = new LineNumberDecompilerMarginProvider(this));
 			}
 		}
 		else {
