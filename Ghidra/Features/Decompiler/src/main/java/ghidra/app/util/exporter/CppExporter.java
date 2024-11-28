@@ -222,7 +222,7 @@ public class CppExporter extends Exporter {
 			return true;
 		}
 
-		if (isPLTTrampoline(currentFunction)) {
+		if (excludePLTTrampolines && isPLTTrampoline(currentFunction)) {
 			return true;
 		}
 
