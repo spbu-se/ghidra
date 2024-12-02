@@ -35,9 +35,9 @@ import ghidra.framework.Application;
 
 import generic.jar.ResourceFile;
 
-public class CppExporterTest extends AbstractGenericTests {
+public class CppExporterTest extends AbstractGenericTest {
 	private Exporter exporter = new CppExporter(null, false, true, false, false, null);
-	private int transactionIzD;
+	private int transactionID;
 	private Program program;
 	private File testFile = new File("testFile.c");
 
@@ -58,53 +58,38 @@ public class CppExporterTest extends AbstractGenericTests {
 		testFile.delete();
 	}
 
-	public class ExportHeaderFilesTest extends AbstractGenericTest {
+	@Test
+	public void testExportHeaderFilesOfDataTypes() throws Exception {
+		ResourceFile gdtFile = Application.findDataFileInAnyModule("typeinfo/clib/clib_gcc_x86_64-linux-gnu.gdt");
+		FileDataTypeManager dtm = FileDataTypeManager.openFileArchive(gdtFile, false);
+		SourceArchive sourceArchive = dtm.getLocalSourceArchive();
+		DataTypeManager dtMgr = program.getDataTypeManager();
 
-		@Test
-		public void testExportHeaderFilesOfDataTypes() throws Exception {
-			ResourceFile gdtFile = Application.findDataFileInAnyModule("typeinfo/clib/clib_gcc_x86_64-linux-gnu.gdt");
-			FileDataTypeManager dtm = FileDataTypeManager.openFileArchive(gdtFile, false);
-			SourceArchive sourceArchive = dtm.getLocalSourceArchive();
-			DataTypeManager dtMgr = program.getDataTypeManager();
+		DataType dt1 = getDataType("testDT1", "stdio.h");
+		dt1.setSourceArchive(sourceArchive);
+		DataType dt2 = getDataType("testDT2", "sys/types.h");
+		dt2.setSourceArchive(sourceArchive);
+		dtMgr.addDataType(dt1, DataTypeConflictHandler.DEFAULT_HANDLER);
+		dtMgr.addDataType(dt2, DataTypeConflictHandler.DEFAULT_HANDLER);
 
-			DataType dt1 = getDataType("testDT1", "stdio.h");
-			dt1.setSourceArchive(sourceArchive);
-			DataType dt2 = getDataType("testDT2", "sys/types.h");
-			dt2.setSourceArchive(sourceArchive);
-			dtMgr.addDataType(dt1, DataTypeConflictHandler.DEFAULT_HANDLER);
-			dtMgr.addDataType(dt2, DataTypeConflictHandler.DEFAULT_HANDLER);
+		assertTrue(exporter.export(testFile, program, null, TaskMonitor.DUMMY));
+		List<String> lines = Files.readAllLines(Paths.get("testFile.c"));
 
-			assertTrue(exporter.export(testFile, program, null, TaskMonitor.DUMMY));
-			List<String> lines = Files.readAllLines(Paths.get("testFile.c"));
-
-			assertEquals("#include <stdio.h>", lines.get(0));
-			assertEquals("#include <sys/types.h>", lines.get(1));
-		}
-
-		private DataType getDataType(String name, String catName) {
-			EnumDataType dt = new EnumDataType("define_" + name, 8);
-			dt.add(name, 1);
-			dt.setLength(dt.getMinimumPossibleLength());
-			CategoryPath categoryPath = new CategoryPath(CategoryPath.ROOT, catName.split("/"));
-			dt.setCategoryPath(categoryPath);
-			return dt;
-		}
-
-		private static Language getLanguage(String languageName) throws LanguageNotFoundException {
-			LanguageService languageService = DefaultLanguageService.getLanguageService();
-			return languageService.getLanguage(new LanguageID(languageName));
-		}
+		assertEquals("#include <stdio.h>", lines.get(0));
+		assertEquals("#include <sys/types.h>", lines.get(1));
 	}
-//
-//	public class CRTExcludeTest extends AbstractGenericTest {
-//
-//		@Test
-//		public void testExcludeCRT() throws Exception {
-//
-//			assertTrue(exporter.export(testFile, program, null, TaskMonitor.DUMMY));
-//			List<String> lines = Files.readAllLines(Paths.get("testFile.c"));
-//
-//		}
-//
-//	}
+
+	private DataType getDataType(String name, String catName) {
+		EnumDataType dt = new EnumDataType("define_" + name, 8);
+		dt.add(name, 1);
+		dt.setLength(dt.getMinimumPossibleLength());
+		CategoryPath categoryPath = new CategoryPath(CategoryPath.ROOT, catName.split("/"));
+		dt.setCategoryPath(categoryPath);
+		return dt;
+	}
+
+	private static Language getLanguage(String languageName) throws LanguageNotFoundException {
+		LanguageService languageService = DefaultLanguageService.getLanguageService();
+		return languageService.getLanguage(new LanguageID(languageName));
+	}
 }
