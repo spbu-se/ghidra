@@ -173,6 +173,9 @@ public class ClangLayoutController implements LayoutModel, LayoutModelListener {
 		int columnPosition = 0;
 		for (int i = 0; i < tokens.size(); ++i) {
 			ClangToken token = tokens.get(i);
+			if (token.getCollapsedToken()) {
+				continue;
+			}
 			Color color = syntaxColor[token.getSyntaxType()];
 			if (token instanceof ClangCommentToken) {
 				AttributedString prototype = new AttributedString("prototype", color, metrics);
