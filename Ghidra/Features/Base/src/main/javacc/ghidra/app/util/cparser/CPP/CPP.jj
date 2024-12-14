@@ -558,6 +558,9 @@ public class PreProcessor {
 	// Token string for Include Directory Pathlist
 	Vector<String> pathList = new Vector<String>();
 
+	// Current header path
+	String currentHeaderPath = "";
+
 	int ifDepth = 0;
 	
 	//Hastable for storing #defs
@@ -571,6 +574,8 @@ public class PreProcessor {
 	private HashMap<String, Integer> alreadyDone;
 
     private StringBuilder parseMessages = new StringBuilder();
+
+    private HashSet<String> filenames = new HashSet<String>();
 
     // true if parse was successful
     private boolean parseSuccess = false;
@@ -643,7 +648,15 @@ public class PreProcessor {
 		if (emitExecSwitch == true) {
 			// val.expand(false);
 			val.image = val.image.trim();
-			val.setPath(curFileStackTop());
+			String currentFilePath = curFileStackTop();
+			if (filenames.contains(currentFilePath))
+			{
+				val.setPath(currentFilePath);
+			}
+			else
+			{
+				val.setPath(currentHeaderPath);
+			}
 			defs.put(key.image, val);
 		}
 	}
@@ -783,7 +796,6 @@ public class PreProcessor {
 				
 			val = val + 1;
 			alreadyDone.put(incFile.getAbsolutePath(), val);
-
 			fileStack.push(incFile.getAbsolutePath());
 			parser = new PreProcessor(this);
 			parser.ReInit(fis);
@@ -1217,6 +1229,17 @@ public class PreProcessor {
 		}
 	}
 
+	public void addFilenames(String[] files) {
+		if (files == null || files.length < 1) {
+			return;
+		}
+
+		for (String file : files)
+		{
+			filenames.add(file);
+		}
+	}
+
 	public int getNumericType(String val) {
 		try {
 			Double.parseDouble(val);
@@ -1337,7 +1360,8 @@ public class PreProcessor {
 			addParseMessage(null, msg);
 			Msg.error(this, msg);
 			return false;
-		}	
+		}
+		currentHeaderPath = filename;
 		fileStack.push(filename);
 		alreadyDone = new HashMap<String, Integer>();
 		ReInit(fis);
@@ -1374,6 +1398,7 @@ public class PreProcessor {
 		this.shift = parent.shift;
 		this.alreadyDone = parent.alreadyDone;
 		this.verboseLevel = parent.verboseLevel;
+		this.currentHeaderPath = parent.currentHeaderPath;
 	}
 
 	public PreProcessor(String[] args) throws ParseException {
