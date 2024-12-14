@@ -96,7 +96,6 @@ import java.util.*;
 
 @SuppressWarnings("all")  // ignore warnings from generated code
 public class CParser {
-
     private static String DEFAULT_PARSER_OUTPUT_FILENAME = "CParser.out";
     
     // Map for storing typedef types
@@ -123,8 +122,8 @@ public class CParser {
     private int headerFileLine = 1;          // Current line number from #line token
     private int headerFileLineOffset = 0;     // Offset into parse stream of last #line token
     private String[] includePaths = null;	 // Paths to header files
+    private HashSet<String> filenames = new HashSet<String>();	// Header files
     private String currentCategoryName = ""; // Current category, ROOT category
-    private String currentHeaderPath = "";   // Current header path
 
     private final static String ANONYMOUS_STRUCT_PREFIX = "_struct_";
     private final static String ANONYMOUS_UNION_PREFIX = "_union_";
@@ -137,7 +136,7 @@ public class CParser {
     private Stack<DataType> dataTypeStack = new Stack<DataType>();
 
     private StringBuilder parseMessages = new StringBuilder();
-
+	
     // true if parse was successful
     private boolean parseSuccess = false;
     
@@ -157,6 +156,17 @@ public class CParser {
     public void setIncludePaths(String[] Paths) {
         includePaths = Paths;
     }
+
+    public void setFilenames(String[] files) {
+		if (files == null || files.length < 1) {
+			return;
+		}
+
+		for (String file : files)
+		{
+			filenames.add(file);
+		}
+	}
 
     private CategoryPath getCurrentCategoryPath() {
         return getCategory(currentCategoryName);
@@ -542,7 +552,6 @@ public class CParser {
         
         // create an initial enum and add all new members
         EnumDataType enumDT= new EnumDataType(getCurrentCategoryPath(), enumName, 8, dtMgr);
-        enumDT.setDescription(currentHeaderPath);
         if (list != null) {
             for (EnumMember member : list) {
                 try {
@@ -1519,11 +1528,15 @@ void LineDef() : {
 {
     (<LINE> | <LINEALT>)  ( lineTok= <LINENUMBER_LITERAL> )  ( fileTok= <PATH_LITERAL> ) [ (<INTEGER_LITERAL>)+ ]
     {
-        headerFileName= fileTok.image.substring(1, fileTok.image.length() - 1);
-        headerFileLine= Integer.parseInt(lineTok.image);
-        headerFileLineOffset= lineTok.beginLine;
-        currentHeaderPath = headerFileName;
-        currentCategoryName = getFileName(headerFileName);
+        headerFileName = fileTok.image.substring(1, fileTok.image.length() - 1);
+        headerFileLine = Integer.parseInt(lineTok.image);
+        headerFileLineOffset = lineTok.beginLine;
+        String categoryName = getFileName(headerFileName);
+        if (filenames.contains(categoryName))
+        {
+        	currentCategoryName = categoryName;
+        }
+        
     }
 }
 
@@ -2075,7 +2088,6 @@ Composite StructOrUnion() : {
         <STRUCT> ( DeclSpec(dec) | PragmaSpec() )*
         {
             comp =  new StructureDataType(getCurrentCategoryPath(), ANONYMOUS_STRUCT_PREFIX + cnt++, 0, dtMgr);
-            comp.setDescription(currentHeaderPath);
 
             // Always set the packing, because by default structures should be aligned
             if (packSize > 0) {
@@ -2088,8 +2100,7 @@ Composite StructOrUnion() : {
         }
         |
         <UNION>  ( DeclSpec(dec) )* {
-            comp = new UnionDataType(getCurrentCategoryPath(), ANONYMOUS_UNION_PREFIX  + cnt++, dtMgr); 
-            comp.setDescription(currentHeaderPath);
+            comp = new UnionDataType(getCurrentCategoryPath(), ANONYMOUS_UNION_PREFIX  + cnt++, dtMgr);
         
             // Always set the packing, because by default structures should be aligned
             if (packSize > 0) {
