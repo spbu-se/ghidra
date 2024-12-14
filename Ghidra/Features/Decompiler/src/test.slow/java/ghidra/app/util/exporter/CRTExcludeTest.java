@@ -32,63 +32,66 @@ import ghidra.util.task.TaskMonitor;
 import ghidra.program.database.ProgramDB;
 import ghidra.program.model.data.*;
 import ghidra.framework.Application;
+import ghidra.base.project.GhidraProject;
+import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
+import ghidra.app.util.exporter.CppExporter;
+import ghidra.test.TestEnv;
+import ghidra.framework.Application;
+import utility.application.ApplicationLayout;
+import utility.application.DummyApplicationLayout;
+import ghidra.framework.ApplicationConfiguration;
+import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 
-import generic.jar.ResourceFile;
-
-public class CppExporterTest extends AbstractGenericTest {
+public class CRTExcludeTest extends AbstractGhidraHeadlessIntegrationTest {
 	private Exporter exporter = new CppExporter(null, false, true, false, false, null);
 	private int transactionID;
 	private Program program;
+	private GhidraProject testProject;
+	private File testBinary = new File("../../Test/TestResources/src/cpp/simpleHelloWorld/simple_hello_world");
 	private File testFile = new File("testFile.c");
+	private TestEnv env;
 
 	@Before
 	public void setUp() throws Exception {
+		ApplicationLayout dummyLayout = new DummyApplicationLayout("TestLayout");
+		ApplicationConfiguration configuration = new ApplicationConfiguration();
+		if (!Application.isInitialized()) {
+			Application.initializeApplication(dummyLayout, configuration);
+		}
+		env = new TestEnv();
+		testProject = env.getGhidraProject();
 		Language language = getLanguage("x86:LE:32:default");
-		program = new ProgramDB("Test", language, language.getDefaultCompilerSpec(), this);
+		program = testProject.importProgram(testBinary, language, language.getDefaultCompilerSpec());
 		transactionID = program.startTransaction("Test");
+		AutoAnalysisManager analysisManager = AutoAnalysisManager.getAnalysisManager(program);
+		analysisManager.reAnalyzeAll(program.getMemory().getLoadedAndInitializedAddressSet());
+		analysisManager.startAnalysis(TaskMonitor.DUMMY, false);
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		if (program != null) {
 			program.endTransaction(transactionID, true);
-			program.release(this);
 		}
-
 		testFile.delete();
+		testProject.close();
 	}
+
+	private String[] CRTFunctionNames = { "void processEntry _start", "int _init", "void __do_global_dtors_aux",
+			"void _fini" };
 
 	@Test
-	public void testExportHeaderFilesOfDataTypes() throws Exception {
-		ResourceFile gdtFile = Application.findDataFileInAnyModule("typeinfo/clib/clib_gcc_x86_64-linux-gnu.gdt");
-		FileDataTypeManager dtm = FileDataTypeManager.openFileArchive(gdtFile, false);
-		SourceArchive sourceArchive = dtm.getLocalSourceArchive();
-		DataTypeManager dtMgr = program.getDataTypeManager();
-
-		DataType dt1 = getDataType("testDT1", "stdio.h");
-		dt1.setSourceArchive(sourceArchive);
-		DataType dt2 = getDataType("testDT2", "sys/types.h");
-		dt2.setSourceArchive(sourceArchive);
-		dtMgr.addDataType(dt1, DataTypeConflictHandler.DEFAULT_HANDLER);
-		dtMgr.addDataType(dt2, DataTypeConflictHandler.DEFAULT_HANDLER);
-
+	public void testExcludeCRT() throws Exception {
 		assertTrue(exporter.export(testFile, program, null, TaskMonitor.DUMMY));
 		List<String> lines = Files.readAllLines(Paths.get("testFile.c"));
-
-		assertEquals("#include <stdio.h>", lines.get(0));
-		assertEquals("#include <sys/types.h>", lines.get(1));
+		for (String line : lines) {
+			for (String CRTFunctionName : CRTFunctionNames) {
+				assertFalse(line.contains(CRTFunctionName));
+			}
+		}
 	}
 
-	private DataType getDataType(String name, String catName) {
-		EnumDataType dt = new EnumDataType("define_" + name, 8);
-		dt.add(name, 1);
-		dt.setLength(dt.getMinimumPossibleLength());
-		CategoryPath categoryPath = new CategoryPath(CategoryPath.ROOT, catName.split("/"));
-		dt.setCategoryPath(categoryPath);
-		return dt;
-	}
-
-	private static Language getLanguage(String languageName) throws LanguageNotFoundException {
+	private Language getLanguage(String languageName) throws LanguageNotFoundException {
 		LanguageService languageService = DefaultLanguageService.getLanguageService();
 		return languageService.getLanguage(new LanguageID(languageName));
 	}
