@@ -472,6 +472,7 @@ public class CParserUtils {
 
 		cpp.setArgs(args);
 		cpp.addIncludePaths(includePaths);
+		cpp.addFilenames(filenames);
 
 		PrintStream os = System.out;
 
@@ -559,6 +560,7 @@ public class CParserUtils {
 				cParser.setParseFileName(fName);
 				cParser.setMonitor(monitor);
 				cParser.setIncludePaths(includePaths);
+				cParser.setFilenames(filenames);
 				cParser.parse(bis);
 				cparseSucceeded = cParser.didParseSucceed();
 			}
