@@ -16,7 +16,10 @@
 package ghidra.app.decompiler.component.margin;
 
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.math.BigInteger;
+import java.util.Map;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -26,6 +29,7 @@ import docking.widgets.fieldpanel.LayoutModel;
 import docking.widgets.fieldpanel.listener.IndexMapper;
 import docking.widgets.fieldpanel.listener.LayoutModelListener;
 import ghidra.app.decompiler.DecompileOptions;
+import ghidra.app.decompiler.component.DecompilerPanel;
 import ghidra.program.model.listing.Program;
 
 /**
@@ -36,9 +40,17 @@ public class LineNumberDecompilerMarginProvider extends JPanel
 
 	private LayoutPixelIndexMap pixmap;
 	private LayoutModel model;
+	private final DecompilerPanel decompilerPanel;
 
-	public LineNumberDecompilerMarginProvider() {
+	public LineNumberDecompilerMarginProvider(DecompilerPanel decompilerPanel) {
+		this.decompilerPanel = decompilerPanel;
 		setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 2));
+		addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				handleMouseClick(e);
+			}
+		});
 	}
 
 	@Override
@@ -91,10 +103,23 @@ public class LineNumberDecompilerMarginProvider extends JPanel
 		}
 		int lastLine = model.getNumIndexes().intValueExact();
 		int width = getFontMetrics(getFont()).stringWidth(Integer.toString(lastLine));
+		int widthForArrows = getFontMetrics(getFont()).stringWidth(" ") * 2;
+		width += widthForArrows;
 		Insets insets = getInsets();
 		width += insets.left + insets.right;
-		setPreferredSize(new Dimension(Math.max(16, width), 0));
+		setPreferredSize(new Dimension(Math.max(32, width), 0));
 		invalidate();
+	}
+
+	private void handleMouseClick(MouseEvent e) {
+		Insets insets = getInsets();
+		int y = e.getY() - insets.top;
+		int x = e.getX() - insets.left;
+
+		if (x >= getWidth() - getFontMetrics(getFont()).stringWidth(" ") * 2 - insets.right) {
+			decompilerPanel.arrowClickAction(y);
+			repaint();
+		}
 	}
 
 	@Override
@@ -102,15 +127,33 @@ public class LineNumberDecompilerMarginProvider extends JPanel
 		super.paint(g);
 
 		Insets insets = getInsets();
-		int rightEdge = getWidth() - insets.right;
+		int rightEdge = getWidth() - insets.right - getFontMetrics(getFont()).stringWidth(" ");
+		int leftEdge = insets.left;
 		Rectangle visible = getVisibleRect();
 		BigInteger startIdx = pixmap.getIndex(visible.y);
 		BigInteger endIdx = pixmap.getIndex(visible.y + visible.height);
 		int ascent = g.getFontMetrics().getMaxAscent();
+		int arrowSize = ascent / 2;
+		Map<Integer, Boolean> linesIndexes = decompilerPanel.getLinesWithOpeningBraces();
+
+
 		for (BigInteger i = startIdx; i.compareTo(endIdx) <= 0; i = i.add(BigInteger.ONE)) {
 			String text = i.add(BigInteger.ONE).toString();
-			int width = g.getFontMetrics().stringWidth(text);
-			GraphicsUtils.drawString(this, g, text, rightEdge - width, pixmap.getPixel(i) + ascent);
+			GraphicsUtils.drawString(this, g, text, leftEdge, pixmap.getPixel(i) + ascent);
+
+			if (linesIndexes.containsKey(i.intValue())) {
+				int y = pixmap.getPixel(i) + ascent;
+				g.setColor(Color.GRAY);
+				if (linesIndexes.get(i.intValue())) {
+					y -= arrowSize / 2;
+					g.drawLine(rightEdge, y, rightEdge - arrowSize / 2, y - arrowSize / 2);
+					g.drawLine(rightEdge, y, rightEdge - arrowSize / 2, y + arrowSize / 2);
+				} else {
+					g.drawLine(rightEdge, y, rightEdge - arrowSize / 2, y - arrowSize / 2);
+					g.drawLine(rightEdge, y, rightEdge + arrowSize / 2, y - arrowSize / 2);
+				}
+				g.setColor(Color.BLACK);
+			}
 		}
 	}
 }
