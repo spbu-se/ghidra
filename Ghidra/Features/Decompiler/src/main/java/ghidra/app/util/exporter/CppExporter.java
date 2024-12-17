@@ -182,7 +182,8 @@ public class CppExporter extends Exporter {
 		writeResults(results, headerWriter, cFileWriter, chunkingMonitor);
 	}
 
-	private static final String PLT_TRAMPOLINE_INSTRUCTION = "JMP qword ptr";
+	private static final String PLT_TRAMPOLINE_INSTRUCTION_QWORD = "JMP qword ptr";
+	private static final String PLT_TRAMPOLINE_INSTRUCTION_DWORD = "JMP dword ptr";
 
 	private boolean isPLTTrampoline(Function function) {
 		Program program = function.getProgram();
@@ -194,7 +195,8 @@ public class CppExporter extends Exporter {
 				continue;
 			Instruction instruction = (Instruction) codeUnit;
 			String instructionString = instruction.toString();
-			if (instructionString.startsWith(PLT_TRAMPOLINE_INSTRUCTION)) {
+			if (instructionString.startsWith(PLT_TRAMPOLINE_INSTRUCTION_QWORD)
+					|| instructionString.startsWith(PLT_TRAMPOLINE_INSTRUCTION_DWORD)) {
 				Object inputObject = instruction.getInputObjects()[0];
 				if (!(inputObject instanceof Address))
 					continue;
