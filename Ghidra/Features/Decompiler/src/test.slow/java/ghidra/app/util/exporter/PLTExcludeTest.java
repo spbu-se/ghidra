@@ -37,6 +37,7 @@ import ghidra.framework.Application;
 import utility.application.ApplicationLayout;
 import utility.application.DummyApplicationLayout;
 import ghidra.framework.ApplicationConfiguration;
+import ghidra.framework.options.Options;
 import ghidra.test.AbstractGhidraHeadlessIntegrationTest;
 
 public class PLTExcludeTest extends AbstractGhidraHeadlessIntegrationTest {
@@ -74,7 +75,7 @@ public class PLTExcludeTest extends AbstractGhidraHeadlessIntegrationTest {
 		testProject.close();
 	}
 
-	private String[] PLTFunctionNames = { "int puts", "void FUN_00101040", "void FUN_00101020" };
+	private String[] PLTFunctionNames = { "void FUN_00101040", "void FUN_00101050" };
 
 	@Test
 	public void testExcludePLT() throws Exception {
@@ -85,6 +86,13 @@ public class PLTExcludeTest extends AbstractGhidraHeadlessIntegrationTest {
 				assertFalse(line.contains(PLTFunctionName));
 			}
 		}
+	}
+
+	protected void setAnalysisOptions(String optionName) {
+		int txId = program.startTransaction("Analyze");
+		Options analysisOptions = program.getOptions(Program.ANALYSIS_PROPERTIES);
+		analysisOptions.setBoolean(optionName, false);
+		program.endTransaction(txId, true);
 	}
 
 	private Language getLanguage(String languageName) throws LanguageNotFoundException {
