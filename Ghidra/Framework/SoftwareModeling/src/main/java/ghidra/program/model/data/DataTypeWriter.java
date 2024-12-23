@@ -235,6 +235,9 @@ public class DataTypeWriter {
             case null -> {
                 return;
             }
+            case FunctionDefinition ignored -> {
+                return;
+            }
             case FactoryDataType ignored -> {
                 IllegalArgumentException iae =
                         new IllegalArgumentException("Factory data types may not be written");
@@ -313,9 +316,6 @@ public class DataTypeWriter {
 		else if (dt instanceof BitFieldDataType) {
 			// skip
 		}
-		else if (dt instanceof FunctionDefinition functionDefinition) {
-			deferredFunctionDefenition.add(functionDefinition);
-		}
 		else {
 			writer.write(EOL);
 			writer.write(EOL);
@@ -335,9 +335,6 @@ public class DataTypeWriter {
 		while (!deferredTypes.isEmpty()) {
 			DataType dt = deferredTypeFIFO.removeFirst();
 			deferredTypes.remove(dt);
-			if (dt instanceof FunctionDefinition) {
-				continue;
-			}
 			write(dt, monitor);
 		}
 		writeDeferredCompositeDeclarations(monitor);
