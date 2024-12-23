@@ -44,6 +44,7 @@ public class DataTypeWriter {
 	private Set<DataType> resolved = new HashSet<>();
 	private Map<String, DataType> resolvedTypeMap = new HashMap<>();
 	private Set<Composite> deferredCompositeDeclarations = new HashSet<>();
+	private Set<FunctionDefinition> deferredFunctionDefenition = new HashSet<>();
 	private ArrayDeque<DataType> deferredTypeFIFO = new ArrayDeque<>();
 	private Set<DataType> deferredTypes = new HashSet<>();
 	private int writerDepth = 0;
@@ -169,10 +170,14 @@ public class DataTypeWriter {
 		monitor.initialize(dataTypes.length);
 		int cnt = 0;
 		for (DataType dataType : dataTypes) {
+			if (dataType instanceof FunctionDefinition functionDefinition) {
+				deferredFunctionDefenition.add(functionDefinition);
+			}
 			monitor.checkCancelled();
 			write(dataType, monitor);
 			monitor.setProgress(++cnt);
 		}
+		writeDeferredFunctionDefinition();
 	}
 
 	/**
@@ -192,10 +197,14 @@ public class DataTypeWriter {
 		monitor.initialize(dataTypes.size());
 		int cnt = 0;
 		for (DataType dataType : dataTypes) {
+			if (dataType instanceof FunctionDefinition functionDefinition) {
+				deferredFunctionDefenition.add(functionDefinition);
+			}
 			monitor.checkCancelled();
 			write(dataType, monitor, throwExceptionOnInvalidType);
 			monitor.setProgress(++cnt);
 		}
+		writeDeferredFunctionDefinition();
 	}
 
 	private void deferWrite(DataType dt) {
@@ -222,21 +231,25 @@ public class DataTypeWriter {
 	 */
 	private void doWrite(DataType dt, TaskMonitor monitor, boolean throwExceptionOnInvalidType)
 			throws IOException, CancelledException {
-		if (dt == null) {
-			return;
-		}
-		if (dt instanceof FunctionDefinition) {
-			return;
-		}
-		if (dt instanceof FactoryDataType) {
-			IllegalArgumentException iae =
-				new IllegalArgumentException("Factory data types may not be written");
-			if (throwExceptionOnInvalidType) {
-				throw iae;
-			}
-			Msg.error(this, "Factory data types may not be written - type: " + dt);
-		}
-		if (dt instanceof Pointer || dt instanceof Array || dt instanceof BitFieldDataType) {
+        switch (dt) {
+            case null -> {
+                return;
+            }
+            case FunctionDefinition ignored -> {
+                return;
+            }
+            case FactoryDataType ignored -> {
+                IllegalArgumentException iae =
+                        new IllegalArgumentException("Factory data types may not be written");
+                if (throwExceptionOnInvalidType) {
+                    throw iae;
+                }
+                Msg.error(this, "Factory data types may not be written - type: " + dt);
+            }
+            default -> {
+            }
+        }
+        if (dt instanceof Pointer || dt instanceof Array || dt instanceof BitFieldDataType) {
 			write(getBaseDataType(dt), monitor);
 			return;
 		}
@@ -283,14 +296,12 @@ public class DataTypeWriter {
 		else if (dt instanceof Dynamic) {
 			writeDynamicBuiltIn((Dynamic) dt, monitor);
 		}
-		else if (dt instanceof Structure) {
-			Structure struct = (Structure) dt;
-			writeCompositePreDeclaration(struct, monitor);
+		else if (dt instanceof Structure struct) {
+            writeCompositePreDeclaration(struct, monitor);
 			deferredCompositeDeclarations.add(struct);
 		}
-		else if (dt instanceof Union) {
-			Union union = (Union) dt;
-			writeCompositePreDeclaration(union, monitor);
+		else if (dt instanceof Union union) {
+            writeCompositePreDeclaration(union, monitor);
 			deferredCompositeDeclarations.add(union);
 		}
 		else if (dt instanceof Enum) {
@@ -382,6 +393,17 @@ public class DataTypeWriter {
 		}
 	}
 
+	private void writeDeferredFunctionDefinition()
+			throws IOException, CancelledException {
+		for (FunctionDefinition functionDefinition : deferredFunctionDefenition) {
+			writer.write(EOL);
+			writer.write(functionDefinition.getPrototypeString(true));
+			writer.write(';');
+			writer.write(EOL);
+		}
+		deferredFunctionDefenition.clear();
+	}
+
 	private boolean resortComposites(List<Composite> list, int index) {
 		int listSize = list.size();
 		if (listSize <= 0) {
@@ -452,10 +474,20 @@ public class DataTypeWriter {
 		String compositeType = composite instanceof Structure ? "struct" : "union";
 
 		StringBuilder sb = new StringBuilder();
+
+		boolean needPragmaPack = composite.isPackingEnabled()
+				&& !composite.hasDefaultPacking() && composite.hasExplicitPackingValue();
+
+		if (needPragmaPack) {
+			int packingValue = composite.getExplicitPackingValue();
+			sb.append("#pragma pack(push, ").append(packingValue).append(")");
+			sb.append(EOL);
+		}
+
 		sb.append(compositeType + " " + composite.getDisplayName() + " {");
 
 		String descrip = composite.getDescription();
-		if (descrip != null && descrip.length() > 0) {
+		if (descrip != null && !descrip.isEmpty()) {
 			sb.append(" " + comment(descrip));
 		}
 		sb.append(EOL);
@@ -468,6 +500,12 @@ public class DataTypeWriter {
 		sb.append(annotator.getSuffix(composite, null));
 		sb.append("};");
 
+		if (needPragmaPack) {
+			sb.append(EOL);
+			sb.append("#pragma pack(pop)");
+			sb.append(EOL);
+		}
+
 		writer.write(sb.toString());
 		writer.write(EOL);
 		writer.write(EOL);
@@ -479,7 +517,7 @@ public class DataTypeWriter {
 		sb.append(annotator.getPrefix(composite, component));
 
 		String fieldName = component.getFieldName();
-		if (fieldName == null || fieldName.length() == 0) {
+		if (fieldName == null || fieldName.isEmpty()) {
 			fieldName = component.getDefaultFieldName();
 		}
 
@@ -492,7 +530,7 @@ public class DataTypeWriter {
 		sb.append(annotator.getSuffix(composite, component));
 
 		String comment = component.getComment();
-		if (comment != null && comment.length() > 0) {
+		if (comment != null && !comment.isEmpty()) {
 			sb.append(" " + comment(comment));
 		}
 		sb.append(EOL);
