@@ -190,7 +190,6 @@ public class CppExporter extends Exporter {
 		List<CPPResult> results = parallelDecompiler.decompileFunctions(functions);
 		writeResults(results, headerWriter, cFileWriter, chunkingMonitor);
 	}
-
 	private static final String PLT_TRAMPOLINE_INSTRUCTION_QWORD = "JMP qword ptr";
 	private static final String PLT_TRAMPOLINE_INSTRUCTION_DWORD = "JMP dword ptr";
 
@@ -224,9 +223,8 @@ public class CppExporter extends Exporter {
 		String functionName = function.getName();
 		return functionName.startsWith(CRT_PREFIX);
 	}
-	
-	private boolean excludeFunction(Function currentFunction) {
 
+	private boolean excludeFunction(Function currentFunction) {
 		if (excludePLTTrampolines && isPLTTrampoline(currentFunction)) {
 			return true;
 		}
@@ -234,7 +232,7 @@ public class CppExporter extends Exporter {
 		if (excludeCRuntime && isCRTFunction(currentFunction)) {
 			return true;
 		}
-		
+
 		if (functionTagSet.isEmpty()) {
 			return false;
 		}
