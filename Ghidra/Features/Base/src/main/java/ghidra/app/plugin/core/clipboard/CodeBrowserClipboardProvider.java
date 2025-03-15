@@ -51,6 +51,7 @@ import ghidra.program.database.mem.AddressSourceInfo;
 import ghidra.program.database.symbol.CodeSymbol;
 import ghidra.program.database.symbol.FunctionSymbol;
 import ghidra.program.model.address.*;
+import ghidra.program.model.data.*;
 import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
@@ -82,6 +83,8 @@ public class CodeBrowserClipboardProvider extends ByteCopier
 		new ClipboardType(DataFlavor.stringFlavor, "Memory Block Offset");
 	public static final ClipboardType CODE_TEXT_TYPE =
 		new ClipboardType(DataFlavor.stringFlavor, "Formatted Code");
+	public static final ClipboardType C_OBJECT_TYPE =
+			new ClipboardType(DataFlavor.stringFlavor, "C Object");
 	public static final ClipboardType LABELS_COMMENTS_TYPE =
 		new ClipboardType(CodeUnitInfoTransferable.localDataTypeFlavor, "Labels and Comments");
 	public static final ClipboardType LABELS_TYPE =
@@ -104,6 +107,7 @@ public class CodeBrowserClipboardProvider extends ByteCopier
 		List<ClipboardType> list = new LinkedList<>();
 
 		list.add(CODE_TEXT_TYPE);
+		list.add(C_OBJECT_TYPE);
 		list.add(LABELS_COMMENTS_TYPE);
 		list.add(LABELS_TYPE);
 		list.add(COMMENTS_TYPE);
@@ -268,6 +272,9 @@ public class CodeBrowserClipboardProvider extends ByteCopier
 		}
 		else if (copyType == CODE_TEXT_TYPE) {
 			return copyCode(monitor);
+		}
+		else if (copyType == C_OBJECT_TYPE) {
+			return copyCObject(monitor);
 		}
 		else if (copyType == LABELS_COMMENTS_TYPE) {
 			return copyLabelsComments(true, true, monitor);
@@ -522,6 +529,25 @@ public class CodeBrowserClipboardProvider extends ByteCopier
 		}
 
 		return createStringTransferable(g.getBuffer());
+	}
+
+	protected Transferable copyCObject(TaskMonitor monitor) {
+		Listing listing = currentProgram.getListing();
+		StringBuilder strBuilder = new StringBuilder();
+		CodeUnitIterator codeUnits = listing.getCodeUnits(getSelectedAddresses(), true);
+		while (codeUnits.hasNext() && !monitor.isCancelled()) {
+			CodeUnit codeUnit = codeUnits.next();
+			if (codeUnit instanceof Data && codeUnit.getLabel() != null)
+			{
+				String value = ((Data) codeUnit).getValueAsCObject();
+				if (value != null && value != "")
+				{
+					strBuilder.append(value + "\n");
+				}
+			}
+		}
+
+		return createStringTransferable(strBuilder.toString());
 	}
 
 	private Transferable copyByteString(Address address) {

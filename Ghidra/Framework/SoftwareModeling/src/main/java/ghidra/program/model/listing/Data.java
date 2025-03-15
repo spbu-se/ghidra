@@ -16,6 +16,9 @@
 package ghidra.program.model.listing;
 
 import java.util.List;
+import java.util.StringJoiner;
+
+import org.apache.commons.text.StringEscapeUtils;
 
 import ghidra.docking.settings.Settings;
 import ghidra.program.model.address.Address;
@@ -297,5 +300,56 @@ public interface Data extends CodeUnit, Settings {
 	 * @return the prefix
 	 */
 	public String getDefaultLabelPrefix(DataTypeDisplayOptions options);
+
+	/**
+	 * Returns the value of the data item as a C object.
+	 * @return string representation of C object value
+	 */
+	default String getValueAsCObject()
+	{
+		try
+		{
+			Object value = getValue();
+			return value == null ? null : getValueAsCObject(value);
+		}
+		catch (Exception e)
+		{
+			return null;
+		}
+	}
+
+	private String getValueAsCObject(Object value)
+	{
+		if (value instanceof List<?>)
+		{
+			StringJoiner stringJoiner = new StringJoiner(", ", "{", "}");
+			for (Object element : (List<?>) value)
+			{
+				stringJoiner.add(getValueAsCObject(element));
+			}
+
+			return stringJoiner.toString();
+		}
+		else if (value instanceof Address)
+		{
+			CodeUnit pointer =  getProgram().getListing().getCodeUnitAt((Address) value);
+			if (pointer instanceof Data && ((Data) pointer).hasStringValue())
+			{
+				return getValueAsCObject(((Data) pointer).getValue());
+			}
+
+			return pointer != null ? "&" + pointer.getLabel() : null;
+		}
+		else if (value instanceof Character)
+		{
+			return "'" + StringEscapeUtils.escapeJava(value.toString()) + "'";
+		}
+		else if (value instanceof String)
+		{
+			return "\"" + StringEscapeUtils.escapeJava(value.toString()) + "\"";
+		}
+
+		return value.toString();
+	}
 
 }

@@ -16,6 +16,8 @@
 package ghidra.program.database.data;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import db.DBRecord;
@@ -24,6 +26,7 @@ import ghidra.docking.settings.SettingsImpl;
 import ghidra.program.database.DBObjectCache;
 import ghidra.program.model.data.*;
 import ghidra.program.model.mem.MemBuffer;
+import ghidra.program.model.mem.WrappedMemBuffer;
 import ghidra.util.UniversalID;
 import ghidra.util.exception.AssertException;
 
@@ -262,7 +265,20 @@ abstract class CompositeDB extends DataTypeDB implements CompositeInternal {
 
 	@Override
 	public Object getValue(MemBuffer buf, Settings settings, int length) {
-		return null;
+		List<Object> list = new ArrayList<Object>();
+		for (DataTypeComponent dt : getComponents()) {
+			WrappedMemBuffer elementBuffer = new WrappedMemBuffer(buf, dt.getOffset());
+			Object value = dt.getDataType().getValue(elementBuffer, settings, dt.getLength());
+			if (value != null)
+			{
+				list.add(value);
+			}
+			else
+			{
+				return null;
+			}
+		}
+		return list;
 	}
 
 	@Override
