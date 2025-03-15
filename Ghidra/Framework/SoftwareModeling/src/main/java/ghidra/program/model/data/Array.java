@@ -15,8 +15,13 @@
  */
 package ghidra.program.model.data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import ghidra.docking.settings.Settings;
+import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.MemBuffer;
+import ghidra.program.model.mem.WrappedMemBuffer;
 
 /**
  * Array interface
@@ -134,10 +139,36 @@ public interface Array extends DataType {
 		if (!buf.getMemory().getAllInitializedAddressSet().contains(buf.getAddress())) {
 			return null;
 		}
-		ArrayStringable as = ArrayStringable.getArrayStringable(getDataType());
-		Object value = (as != null) ? as.getArrayString(buf, settings, length) : null;
 
-		return value;
+		ArrayStringable as = ArrayStringable.getArrayStringable(getDataType());
+		if (as != null)
+		{
+			String value = as.getArrayString(buf, settings, length);
+			if (value != null)
+			{
+				return value;
+			}
+		}
+
+		DataType dt = getDataType();
+		int count = getNumElements();
+		int elementLength = getElementLength();
+		List<Object> list = new ArrayList<Object>();
+		for (int i = 0; i < count; i++) {
+			WrappedMemBuffer elementBuffer = new WrappedMemBuffer(buf, i * elementLength);
+			Object value = dt.getValue(elementBuffer, settings, elementLength);
+			if (value != null)
+			{
+				list.add(value);
+			}
+			else
+			{
+				return null;
+			}
+		}
+
+		return list;
+
 		// TODO
 		// For large array it is not scalable to create a java array object.  Perhaps
 		// we could create a GhidraArray that can dish out objects.
