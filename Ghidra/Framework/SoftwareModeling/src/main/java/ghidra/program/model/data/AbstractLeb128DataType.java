@@ -113,10 +113,10 @@ public abstract class AbstractLeb128DataType extends BuiltIn implements Dynamic 
 		}
 
 		int radix = FORMAT.getRadix(settings);
-		String postfix = FORMAT.getRepresentationPostfix(settings);
+		String prefix = FORMAT.getRepresentationPrefix(settings);
 
-		String valStr = val.toString(radix, false, signed, "", "");
-		return valStr.toUpperCase() + postfix;
+		String valStr = val.toString(radix, false, false, prefix, "");
+		return val.getValue() < 0 ? "-" + valStr : valStr;
 	}
 
 	@Override

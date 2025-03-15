@@ -29,6 +29,7 @@ public class FormatSettingsDefinition implements EnumSettingsDefinition {
 	//NOTE: if these strings change, the XML needs to changed also...
 	private static final String[] choices = { "hex", "decimal", "binary", "octal", "char" };
 	private static final String[] valuePostfix = { "h", "", "b", "o", "" };
+	private static final String[] valuePrefix = { "0x", "", "0b", "0", "" };
 	private static final int[] radix = { 16, 10, 2, 8, 0 };
 
 	protected static final String FORMAT = "format";
@@ -90,6 +91,17 @@ public class FormatSettingsDefinition implements EnumSettingsDefinition {
 	 */
 	public String getRepresentationPostfix(Settings settings) {
 		return valuePostfix[getFormat(settings)];
+	}
+
+	/**
+	 * Returns a descriptive string prefix that should be appended after converting a value
+	 * using the radix returned by {@link #getRadix(Settings)}.
+	 *
+	 * @param settings the instance settings
+	 * @return string prefix, such as "0x" for HEX, "0" for octal
+	 */
+	public String getRepresentationPrefix(Settings settings) {
+		return valuePrefix[getFormat(settings)];
 	}
 
 	@Override

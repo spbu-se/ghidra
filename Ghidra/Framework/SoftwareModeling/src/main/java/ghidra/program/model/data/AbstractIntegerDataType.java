@@ -318,17 +318,17 @@ public abstract class AbstractIntegerDataType extends BuiltIn implements ArraySt
 		switch (format) {
 			default:
 			case FormatSettingsDefinition.HEX:
-				valStr = bigInt.toString(16).toUpperCase() + "h";
+				valStr = "0x" + bigInt.toString(16).toUpperCase();
 				nominalLen = (bitLength + 3) / 4;
 				break;
 			case FormatSettingsDefinition.DECIMAL:
 				return bigInt.toString(10);
 			case FormatSettingsDefinition.BINARY:
-				valStr = bigInt.toString(2) + "b";
+				valStr = "0b" + bigInt.toString(2);
 				nominalLen = bitLength;
 				break;
 			case FormatSettingsDefinition.OCTAL:
-				valStr = bigInt.toString(8) + "o";
+				valStr = "0" + bigInt.toString(8);
 				nominalLen = (bitLength + 2) / 3;
 				break;
 		}
