@@ -437,7 +437,7 @@ public class EnumDataType extends GenericDataType implements Enum {
 			if (subValue != 0) {
 				String part = getName(subValue);
 				if (part == null) {
-					part = Long.toHexString(subValue).toUpperCase() + 'h';
+					part = "0x" + Long.toHexString(subValue).toUpperCase();
 				}
 				if (buf.length() != 0) {
 					buf.append(" | ");
