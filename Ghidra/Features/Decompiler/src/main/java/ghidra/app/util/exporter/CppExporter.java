@@ -72,6 +72,10 @@ public class CppExporter extends Exporter {
 	        ".dynamic", ".got", ".got.plt", ".plt", ".eh_frame", ".init_array", ".fini_array", ".interp", ".eh_frame_hdr", ".eh_frame"
 	    ));
 
+	private Set<String> exclude_variables = new HashSet<>(Arrays.asList(
+	        "_IO_stdin_used", "data_start", "__dso_handle"
+	    ));
+
 	private Set<FunctionTag> functionTagSet = new HashSet<>();
 	private boolean excludeMatchingTags = true;
 
@@ -227,7 +231,7 @@ public class CppExporter extends Exporter {
 			TaskMonitor monitor) throws IOException, CancelledException {
 		if (cFileWriter != null)  {
 			String regex = "^[a-zA-Z_][a-zA-Z0-9_]*$";
-	        Pattern pattern = Pattern.compile(regex);
+			Pattern pattern = Pattern.compile(regex);
 			Listing listing = program.getListing();
 			for (MemoryBlock block : program.getMemory().getBlocks()) {
 				if ((program.getExecutableFormat().equals(ElfLoader.ELF_NAME) && (exclude_sections.contains(block.getName()) ||
@@ -243,7 +247,8 @@ public class CppExporter extends Exporter {
 						break;
 					}
 
-					if (codeUnit instanceof Data && codeUnit.getLabel() != null && pattern.matcher(codeUnit.getLabel()).matches()) {
+					if (codeUnit instanceof Data && codeUnit.getLabel() != null &&pattern.matcher(codeUnit.getLabel()).matches() &&
+							!exclude_variables.contains(codeUnit.getLabel())) {
 						try {
 							cFileWriter.println(convertCodeUnitToCObject((Data) codeUnit));
 						}
