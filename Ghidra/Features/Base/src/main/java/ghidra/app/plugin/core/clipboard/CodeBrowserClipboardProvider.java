@@ -537,7 +537,7 @@ public class CodeBrowserClipboardProvider extends ByteCopier
 		CodeUnitIterator codeUnits = listing.getCodeUnits(getSelectedAddresses(), true);
 		while (codeUnits.hasNext() && !monitor.isCancelled()) {
 			CodeUnit codeUnit = codeUnits.next();
-			if (codeUnit instanceof Data && codeUnit.getLabel() != null)
+			if (codeUnit instanceof Data)
 			{
 				String value = ((Data) codeUnit).getValueAsCObject();
 				if (value != null && value != "")
