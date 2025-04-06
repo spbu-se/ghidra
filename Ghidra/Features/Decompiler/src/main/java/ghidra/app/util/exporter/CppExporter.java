@@ -17,8 +17,7 @@ package ghidra.app.util.exporter;
 
 import java.io.*;
 import java.util.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -227,6 +226,8 @@ public class CppExporter extends Exporter {
 	private void writeProgramData(Program program, PrintWriter cFileWriter,
 			TaskMonitor monitor) throws IOException, CancelledException {
 		if (cFileWriter != null)  {
+			String regex = "^[a-zA-Z_][a-zA-Z0-9_]*$";
+	        Pattern pattern = Pattern.compile(regex);
 			Listing listing = program.getListing();
 			for (MemoryBlock block : program.getMemory().getBlocks()) {
 				if ((program.getExecutableFormat().equals(ElfLoader.ELF_NAME) && (exclude_sections.contains(block.getName()) ||
@@ -242,7 +243,7 @@ public class CppExporter extends Exporter {
 						break;
 					}
 
-					if (codeUnit instanceof Data && codeUnit.getLabel() != null) {
+					if (codeUnit instanceof Data && codeUnit.getLabel() != null && pattern.matcher(codeUnit.getLabel()).matches()) {
 						try {
 							cFileWriter.println(convertCodeUnitToCObject((Data) codeUnit));
 						}
