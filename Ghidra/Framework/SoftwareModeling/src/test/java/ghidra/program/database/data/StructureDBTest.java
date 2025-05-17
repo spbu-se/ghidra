@@ -24,7 +24,15 @@ import org.junit.*;
 import com.google.common.collect.Sets;
 
 import generic.test.AbstractGenericTest;
+import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.AddressSpace;
+import ghidra.program.model.address.GenericAddressSpace;
 import ghidra.program.model.data.*;
+import ghidra.program.model.mem.ByteMemBufferImpl;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.StubMemory;
+import ghidra.program.model.scalar.Scalar;
 import ghidra.util.InvalidNameException;
 import ghidra.util.task.TaskMonitor;
 import ghidra.util.task.TaskMonitorAdapter;
@@ -94,6 +102,29 @@ public class StructureDBTest extends AbstractGenericTest {
 
 	private Pointer createPointer(DataType dataType, int length) {
 		return (Pointer) dataMgr.resolve(new Pointer32DataType(dataType), null);
+	}
+	
+	private ByteMemBufferImpl mb(int... values) {
+		GenericAddressSpace gas = new GenericAddressSpace("test", 32, AddressSpace.TYPE_RAM, 1);
+		Memory mem = new TestMemory(gas.getMinAddress(), gas.getMaxAddress());
+		return new ByteMemBufferImpl(mem, gas.getAddress(0), bytes(values), false);
+	}
+	
+	private static class TestMemory extends StubMemory
+	{
+		private Address minAddress;
+		private Address maxAddress;
+		
+		public TestMemory(Address minAddr, Address maxAddr)
+		{
+			minAddress = minAddr;
+			maxAddress = maxAddr;
+		}
+
+		@Override
+	    public AddressSet getAllInitializedAddressSet() {
+	        return new AddressSet(minAddress, maxAddress);
+	    }
 	}
 
 	@Test
@@ -2616,4 +2647,26 @@ public class StructureDBTest extends AbstractGenericTest {
 		}
 	}
 
+	@Test
+	public void testGetValue() throws Exception {
+		struct = createStructure("Test", 0);
+
+		struct.add(new IntegerDataType(), "field1", "Comment1");
+		struct.add(new CharDataType(), "field2", "Comment2");
+
+		ByteMemBufferImpl buf = mb(5, 0, 0, 0, 65);
+
+		Object result = struct.getValue(buf, new SettingsBuilder(), 5);
+
+		assertTrue(result instanceof List);
+
+	    List<?> resultList = (List<?>) result;
+	    assertEquals(resultList.size(), 2);
+
+	    assertTrue(resultList.get(0) instanceof Scalar);
+	    assertEquals(((Scalar) resultList.get(0)).getValue(), 5);
+
+	    assertTrue(resultList.get(1) instanceof Character);
+	    assertEquals(resultList.get(1), 'A');
+	}
 }

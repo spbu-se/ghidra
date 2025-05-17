@@ -144,6 +144,19 @@ public class CodeBrowserClipboardProviderTest extends AbstractGhidraHeadedIntegr
 		struct.add(new StringDataType(), 4);
 		builder.applyDataType("0x02000200", struct);
 
+		builder.setBytes("0x02000300", "00, 00, 00, 01, 41");
+		builder.applyDataType("0x02000300", new IntegerDataType());
+		builder.applyDataType("0x02000304", new CharDataType());
+
+		struct = new StructureDataType("test_struct", 0);
+		struct.add(new IntegerDataType());
+		struct.add(new CharDataType());
+		builder.applyDataType("0x02000300", struct);
+		
+		builder.setBytes("0x02000400", "01, 00, 00, 00, 02, 00, 00, 00");
+		
+		builder.applyDataType("0x02000400", new ArrayDataType(new IntegerDataType(), 2));
+
 		// We would like to test copying of source byte offset values. To do so, we need to create
 		// a memory block that has source byte offset information.
 		FileBytes fileBytes = builder.createFileBytes(100);
@@ -151,7 +164,37 @@ public class CodeBrowserClipboardProviderTest extends AbstractGhidraHeadedIntegr
 		program = builder.getProgram();
 		return program;
 	}
+	
+	@Test
+	public void testCopyPasteSpecial_copyCObject_string() throws Exception {
+		clipboardProvider.setSelection(selection("0x02000006", 1));
+		ClipboardType type = CodeBrowserClipboardProvider.C_OBJECT_TYPE;
+		Transferable transferable = clipboardProvider.copySpecial(type, TaskMonitor.DUMMY);
+		assertThat(transferable, instanceOf(StringTransferable.class));
 
+		String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+		assertEquals(data, "\"abc\"\n");
+	}
+	@Test
+	public void testCopyPasteSpecial_copyCObject_array() throws Exception {
+		clipboardProvider.setSelection(selection("0x02000400", 2));
+		ClipboardType type = CodeBrowserClipboardProvider.C_OBJECT_TYPE;
+		Transferable transferable = clipboardProvider.copySpecial(type, TaskMonitor.DUMMY);
+		assertThat(transferable, instanceOf(StringTransferable.class));
+
+		String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+		assertEquals(data, "{0x1000000, 0x2000000}\n");
+	}
+	@Test
+	public void testCopyPasteSpecial_copyCObject_struct() throws Exception {
+		clipboardProvider.setSelection(selection("0x02000300", 2));
+		ClipboardType type = CodeBrowserClipboardProvider.C_OBJECT_TYPE;
+		Transferable transferable = clipboardProvider.copySpecial(type, TaskMonitor.DUMMY);
+		assertThat(transferable, instanceOf(StringTransferable.class));
+
+		String data = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+		assertEquals(data, "{0x1, \'A\'}\n");
+	}
 	@Test
 	public void testCopySpecialFileOffsets() throws Exception {
 		clipboardProvider.setLocation(location("0x03000113"));
