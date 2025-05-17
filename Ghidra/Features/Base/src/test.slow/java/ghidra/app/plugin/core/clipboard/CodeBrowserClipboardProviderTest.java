@@ -199,7 +199,7 @@ public class CodeBrowserClipboardProviderTest extends AbstractGhidraHeadedIntegr
 		assertThat(transferable, instanceOf(StringTransferable.class));
 		StringTransferable st = (StringTransferable) transferable;
 		String data = (String) st.getTransferData(DataFlavor.stringFlavor);
-		assertEquals("0h\n1h\n2h\n3h\n4h\n5h\n\"abc\"", data);
+		assertEquals("0x0\n0x1\n0x2\n0x3\n0x4\n0x5\n\"abc\"", data);
 	}
 
 	@Test
@@ -215,7 +215,7 @@ public class CodeBrowserClipboardProviderTest extends AbstractGhidraHeadedIntegr
 		assertThat(transferable, instanceOf(StringTransferable.class));
 		StringTransferable st = (StringTransferable) transferable;
 		String data = (String) st.getTransferData(DataFlavor.stringFlavor);
-		assertEquals("1h\n2h\n\"abc\"", data);
+		assertEquals("0x1\n0x2\n\"abc\"", data);
 	}
 
 	@Test
@@ -227,7 +227,7 @@ public class CodeBrowserClipboardProviderTest extends AbstractGhidraHeadedIntegr
 		assertThat(transferable, instanceOf(StringTransferable.class));
 		StringTransferable st = (StringTransferable) transferable;
 		String data = (String) st.getTransferData(DataFlavor.stringFlavor);
-		assertEquals("4h\n\"abc\"", data);
+		assertEquals("0x4\n\"abc\"", data);
 	}
 
 	@Test
