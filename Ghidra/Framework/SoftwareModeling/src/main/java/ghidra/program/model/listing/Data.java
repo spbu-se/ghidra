@@ -332,7 +332,7 @@ public interface Data extends CodeUnit, Settings {
 		}
 		else if (value instanceof Address)
 		{
-			CodeUnit pointer =  getProgram().getListing().getCodeUnitAt((Address) value);
+			CodeUnit pointer = getProgram().getListing().getCodeUnitAt((Address) value);
 			if (pointer instanceof Data && ((Data) pointer).hasStringValue())
 			{
 				return getValueAsCObject(((Data) pointer).getValue());
