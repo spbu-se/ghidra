@@ -473,8 +473,16 @@ public class CppExporter extends Exporter {
 			PrintWriter cFileWriter, TaskMonitor monitor) throws IOException, CancelledException {
 		if (headerWriter != null) {
 			DataTypeManager dtm = program.getDataTypeManager();
-			DataTypeWriter dataTypeWriter =
-				new DataTypeWriter(dtm, headerWriter, isUseCppStyleComments);
+			DataTypeWriter dataTypeWriter;
+			if (includeHeaderFiles) {
+				dataTypeWriter =
+					new DataTypeWriter(dtm, cFileWriter, isUseCppStyleComments, dtm.getSourceArchives());
+			}
+			else {
+				dataTypeWriter =
+						new DataTypeWriter(dtm, cFileWriter, isUseCppStyleComments);
+			}
+
 			headerWriter.write(getFakeCTypeDefinitions(dtm.getDataOrganization()));
 			dataTypeWriter.write(dtm, monitor);
 
@@ -483,8 +491,16 @@ public class CppExporter extends Exporter {
 		}
 		else if (cFileWriter != null) {
 			DataTypeManager dtm = program.getDataTypeManager();
-			DataTypeWriter dataTypeWriter =
-				new DataTypeWriter(dtm, cFileWriter, isUseCppStyleComments);
+			DataTypeWriter dataTypeWriter;
+			if (includeHeaderFiles) {
+				dataTypeWriter =
+					new DataTypeWriter(dtm, cFileWriter, isUseCppStyleComments, dtm.getSourceArchives());
+			}
+			else {
+				dataTypeWriter =
+						new DataTypeWriter(dtm, cFileWriter, isUseCppStyleComments);
+			}
+
 			dataTypeWriter.write(dtm, monitor);
 		}
 

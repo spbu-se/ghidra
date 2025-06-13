@@ -46,6 +46,7 @@ public class DataTypeWriter {
 	private Set<Composite> deferredCompositeDeclarations = new HashSet<>();
 	private ArrayDeque<DataType> deferredTypeFIFO = new ArrayDeque<>();
 	private Set<DataType> deferredTypes = new HashSet<>();
+	private List<SourceArchive> excludeArchives = new ArrayList<>();
 	private int writerDepth = 0;
 	private Writer writer;
 	private DataTypeManager dtm;
@@ -75,6 +76,22 @@ public class DataTypeWriter {
 	public DataTypeWriter(DataTypeManager dtm, Writer writer, boolean cppStyleComments)
 			throws IOException {
 		this(dtm, writer, new DefaultAnnotationHandler(), cppStyleComments);
+	}
+
+	/**
+	 * Constructs a new instance of this class using the given writer. The default annotation
+	 * handler is used.
+	 * @param dtm data-type manager corresponding to target program or null for default
+	 * @param writer the writer to use when writing data types
+	 * @param cppStyleComments whether to use C++ style comments
+	 * @param excludeArchives list of source archives from which data types should be excluded
+	 * @throws IOException if there is an exception writing the output
+	 */
+	public DataTypeWriter(DataTypeManager dtm, Writer writer, boolean cppStyleComments,
+			List<SourceArchive> excludeArchives)
+			throws IOException {
+		this(dtm, writer, cppStyleComments);
+		this.excludeArchives = excludeArchives;
 	}
 
 	/**
@@ -236,6 +253,12 @@ public class DataTypeWriter {
 			}
 			Msg.error(this, "Factory data types may not be written - type: " + dt);
 		}
+
+		if (dt.getCategoryPath().getPath().contains("ELF") ||
+			excludeArchives.contains(dt.getSourceArchive())) {
+			return;
+		}
+
 		if (dt instanceof Pointer || dt instanceof Array || dt instanceof BitFieldDataType) {
 			write(getBaseDataType(dt), monitor);
 			return;
