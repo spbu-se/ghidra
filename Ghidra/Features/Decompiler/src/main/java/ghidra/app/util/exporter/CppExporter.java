@@ -141,6 +141,10 @@ public class CppExporter extends Exporter {
 			if (includeHeaderFiles) {
 				writeIncludeHeaders(program, header, headerWriter, cFileWriter);
 			}
+      
+			if (cFileWriter != null && headerWriter != null) {
+				cFileWriter.println("#include \"" + header.getName() + "\"");
+			}
 
 			if (emitDataTypeDefinitions) {
 				writeEquates(program, header, headerWriter, cFileWriter, chunkingMonitor);
@@ -202,7 +206,7 @@ public class CppExporter extends Exporter {
 		StringBuilder stringBuilder = new StringBuilder();
 		if (codeUnit.hasStringValue())
 		{
-			stringBuilder.append("char * ");
+			stringBuilder.append("char *");
 			stringBuilder.append(codeUnit.getLabel());
 			return stringBuilder.toString();
 		}
@@ -234,7 +238,7 @@ public class CppExporter extends Exporter {
 			Pattern pattern = Pattern.compile(regex);
 			Listing listing = program.getListing();
 			for (MemoryBlock block : program.getMemory().getBlocks()) {
-				if ((program.getExecutableFormat().equals(ElfLoader.ELF_NAME) && (exclude_sections.contains(block.getName()) ||
+				if ((program.getExecutableFormat().equals(ElfLoader.ELF_NAME) &&(exclude_sections.contains(block.getName()) ||
 						!(block.getComment().startsWith("SHT_NOBITS") || block.getComment().startsWith("SHT_PROGBITS")))) ||
 						!block.isLoaded() || block.isExecute() || block.isArtificial() || block.isExternalBlock()) {
 					continue;
@@ -247,7 +251,8 @@ public class CppExporter extends Exporter {
 						break;
 					}
 
-					if (codeUnit instanceof Data && codeUnit.getLabel() != null &&pattern.matcher(codeUnit.getLabel()).matches() &&
+					if (codeUnit instanceof Data && codeUnit.getLabel() != null &&
+							pattern.matcher(codeUnit.getLabel()).matches() &&
 							!exclude_variables.contains(codeUnit.getLabel())) {
 						try {
 							cFileWriter.println(convertCodeUnitToCObject((Data) codeUnit));
