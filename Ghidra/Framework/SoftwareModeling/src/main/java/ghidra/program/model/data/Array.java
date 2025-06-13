@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.docking.settings.Settings;
-import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.MemBuffer;
 import ghidra.program.model.mem.WrappedMemBuffer;
 
